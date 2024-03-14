@@ -38,12 +38,12 @@ public class Server
     	    	                		new InputStreamReader(
     	                        			clientSocket.getInputStream()));
                 String inputLine, outputLine;
+                
+                if ((inputLine = in.readLine()) != null) {
+                    // split inputLine into an array of strings
+                    String[] inputArray = inputLine.split(" ");
 
-                outputLine = server.processInput(null);
-                out.println(outputLine);
-
-                while ((inputLine = in.readLine()) != null) {
-                     outputLine = server.processInput(inputLine);
+                     outputLine = server.processInput(inputArray);
                      out.println(outputLine);
                      if (outputLine.equals("Bye."))
                         break;
