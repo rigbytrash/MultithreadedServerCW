@@ -9,7 +9,21 @@ public class Client {
 
     public void playClient(String command, String filePath) {
         try {
-            clientSocket = new Socket("localhost", 9100);
+            int port = 9100;
+            boolean connected = false;
+            while (!connected && port <= 9999) {
+                try {
+                    clientSocket = new Socket("localhost", port);
+                    connected = true;
+                } catch (IOException e) {
+                    System.err.println("Couldn't connect to port " + port);
+                    port++;
+                }
+            }
+            if (!connected) {
+                System.err.println("Couldn't connect to any port in the range 9100-9999");
+                System.exit(1);
+            }
             socketOutput = new PrintWriter(clientSocket.getOutputStream(), true);
             socketInput = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         } catch (UnknownHostException e) {
