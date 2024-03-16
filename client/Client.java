@@ -16,7 +16,7 @@ public class Client {
                     clientSocket = new Socket("localhost", port);
                     connected = true;
                 } catch (IOException e) {
-                    System.err.println("Couldn't connect to port " + port);
+                    // System.err.println("Couldn't connect to port " + port);
                     port++;
                 }
             }
