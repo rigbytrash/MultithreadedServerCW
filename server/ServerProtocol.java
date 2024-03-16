@@ -25,8 +25,6 @@ public class ServerProtocol {
                     }
                 }
                 return "Ready for file transfer";
-            case "Goodbye, server!":
-                return "Goodbye, client!";
             default:
                 return "Invalid command";
         }
@@ -38,9 +36,10 @@ public class ServerProtocol {
         if (directory.exists() && directory.isDirectory()) {
             File[] files = directory.listFiles();
             if (files != null) {
+                fileList.append("There are ").append(files.length).append(" file(s):");
                 for (File file : files) {
                     if (file.isFile()) {
-                        fileList.append(file.getName()).append("\n");
+                        fileList.append(", ").append(file.getName());
                     }
                 }
             }
@@ -97,7 +96,6 @@ private void readFully(InputStream input, byte[] buffer) throws IOException {
         throw new EOFException("File transmission was interrupted");
     }
 }
-
     
 }
 

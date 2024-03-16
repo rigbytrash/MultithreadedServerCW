@@ -9,7 +9,7 @@ public class Client {
 
     public void playClient(String command, String filePath) {
         try {
-            clientSocket = new Socket("localhost", 2323);
+            clientSocket = new Socket("localhost", 9100);
             socketOutput = new PrintWriter(clientSocket.getOutputStream(), true);
             socketInput = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         } catch (UnknownHostException e) {
@@ -21,8 +21,15 @@ public class Client {
         }
     
         try {
-            socketOutput.println(command);
             if (command.startsWith("put") && filePath != null) {
+                if (new File(filePath).exists()) {
+                    // File exists, proceed with sending the file
+                } else {
+                    System.err.println("Local file does not exist");
+                    System.exit(1);
+                }
+                String fileName = new File(filePath).getName(); // Extract the filename from the file path
+                socketOutput.println("put " + fileName); // Update the command with the filename
                 byte[] fileData = readFile(filePath);
                 OutputStream outputStream = clientSocket.getOutputStream();
 
@@ -36,11 +43,14 @@ public class Client {
                 outputStream.flush();
                 // Do not close the outputStream here
             }
+            else {
+                socketOutput.println(command);
+            }
             
             // Read the response from the server
             String fromServer;
             if ((fromServer = socketInput.readLine()) != null) {
-                System.out.println(fromServer);
+                System.out.println("Server: " + fromServer);
             }
     
             // Now close all streams and the socket
