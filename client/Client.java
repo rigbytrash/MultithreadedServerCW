@@ -1,56 +1,82 @@
 import java.io.*;
 import java.net.*;
+import java.nio.ByteBuffer;
 
 public class Client {
-
     private Socket clientSocket = null;
     private PrintWriter socketOutput = null;
     private BufferedReader socketInput = null;
 
-    public void playClient(String command) {
-
+    public void playClient(String command, String filePath) {
         try {
             clientSocket = new Socket("localhost", 2323);
             socketOutput = new PrintWriter(clientSocket.getOutputStream(), true);
             socketInput = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         } catch (UnknownHostException e) {
-            System.err.println("Don't know about host.\n");
+            System.err.println("Don't know about host.");
             System.exit(1);
         } catch (IOException e) {
-            System.err.println("Couldn't get I/O for the connection to host.\n");
+            System.err.println("Couldn't get I/O for the connection to host.");
             System.exit(1);
         }
-
-        String fromServer;
-
+    
         try {
-            // Send the command to the server
-            if (command != null) {
-                socketOutput.println(command);
-            }
+            socketOutput.println(command);
+            if (command.startsWith("put") && filePath != null) {
+                byte[] fileData = readFile(filePath);
+                OutputStream outputStream = clientSocket.getOutputStream();
 
-            // Read response from server
-            while ((fromServer = socketInput.readLine()) != null) {
+                // Send file size first
+                ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+                buffer.putLong(fileData.length);
+                outputStream.write(buffer.array());
+
+                // Send file data
+                outputStream.write(fileData, 0, fileData.length);
+                outputStream.flush();
+                // Do not close the outputStream here
+            }
+            
+            // Read the response from the server
+            String fromServer;
+            if ((fromServer = socketInput.readLine()) != null) {
                 System.out.println(fromServer);
             }
-
-            // Close resources
+    
+            // Now close all streams and the socket
+            if (command.startsWith("put") && filePath != null) {
+                clientSocket.getOutputStream().close();
+            }
             socketOutput.close();
             socketInput.close();
             clientSocket.close();
         } catch (IOException e) {
-            System.err.println("I/O exception during execution\n");
+            System.err.println("I/O exception during execution: " + e.getMessage());
             System.exit(1);
         }
     }
+    
 
-    public static void main(String[] args) {
-        if (args.length < 1) {
-            System.err.println("Usage: java Client <command>");
-            System.exit(1);
-        }
-
-        Client client = new Client();
-        client.playClient(args[0]);
+    private byte[] readFile(String filePath) throws IOException {
+        File file = new File(filePath);
+        FileInputStream fis = new FileInputStream(file);
+        byte[] data = new byte[(int) file.length()];
+        fis.read(data);
+        fis.close();
+        return data;
     }
-}
+
+        public static void main(String[] args) {
+            if (args.length < 1) {
+                System.err.println("Usage: java Client <command> [file path]");
+                System.exit(1);
+            }
+
+            Client client = new Client();
+            if (args[0].equals("put") && args.length >= 2) {
+                client.playClient(args[0] + " " + args[1], args[1]);
+            } else {
+                client.playClient(args[0], null);
+            }
+        }
+    }
