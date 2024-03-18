@@ -1,5 +1,7 @@
-import java.net.*;
 import java.io.*;
+import java.net.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -8,7 +10,7 @@ public class Server {
     private ServerProtocol server;
 
     public Server() {
-        executorService = Executors.newCachedThreadPool();
+        executorService = Executors.newFixedThreadPool(20);
         server = new ServerProtocol();
     }
 
@@ -23,17 +25,31 @@ public class Server {
 
                 if (outputLine.equals("Ready for file transfer")) {
                     server.handleFileTransfer(clientSocket, inputArray[1]);
+                    System.out.println("File transfer complete: " + inputArray[1]);
+                    out.println("File transfer complete for " + inputArray[1]);
+                    sucessToLog(inputArray[0], clientSocket.getRemoteSocketAddress().toString());
                 } else {
                     System.out.println(outputLine);
                     out.println(outputLine);
                 }
-
-                if (outputLine.equals("Bye.")) {
-                    return;
-                }
             }
         } finally {
             clientSocket.close();
+        }
+    }
+
+    private void sucessToLog(String request, String clientIPAddress) {
+        Date currentDate = new Date();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+        String currentDateStr = dateFormat.format(currentDate);
+        String currentTimeStr = timeFormat.format(currentDate);
+        String logEntry = currentDateStr + "|" + currentTimeStr + "|" + clientIPAddress + "|" + request;
+
+        try (PrintWriter out = new PrintWriter(new FileWriter("log.txt", true))) {
+            out.println(logEntry);
+        } catch (IOException e) {
+            System.err.println("Error writing to log file: " + e.getMessage());
         }
     }
 
@@ -54,17 +70,17 @@ public class Server {
                     }
                 });
             }
-
         } catch (IOException e) {
             System.err.println("Could not listen on port: " + port);
         }
     }
 
     public void runServer() {
-        for (int port = 9100; port <= 9999; port++) {
-            int finalPort = port;
-            executorService.submit(() -> startServerOnPort(finalPort));
-        }
+        // for (int port = 9100; port <= 9999; port++) {
+        //     int finalPort = port;
+        //     executorService.submit(() -> startServerOnPort(finalPort));
+        // }
+        startServerOnPort(9500);
     }
 
     public static void main(String[] args) {

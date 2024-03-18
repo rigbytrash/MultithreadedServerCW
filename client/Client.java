@@ -1,6 +1,5 @@
 import java.io.*;
 import java.net.*;
-import java.nio.ByteBuffer;
 
 public class Client {
     private Socket clientSocket = null;
@@ -9,19 +8,11 @@ public class Client {
 
     public void playClient(String command, String filePath) {
         try {
-            int port = 9100;
-            boolean connected = false;
-            while (!connected && port <= 9999) {
-                try {
-                    clientSocket = new Socket("localhost", port);
-                    connected = true;
-                } catch (IOException e) {
-                    // System.err.println("Couldn't connect to port " + port);
-                    port++;
-                }
-            }
-            if (!connected) {
-                System.err.println("Couldn't connect to any port in the range 9100-9999");
+            int port = 9500;
+            try {
+                clientSocket = new Socket("localhost", port);
+            } catch (IOException e) {
+                System.err.println("Couldn't connect to port " + port);
                 System.exit(1);
             }
             socketOutput = new PrintWriter(clientSocket.getOutputStream(), true);
@@ -48,10 +39,9 @@ public class Client {
                 OutputStream outputStream = clientSocket.getOutputStream();
 
                 // Send file size first
-                ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-                buffer.putLong(fileData.length);
-                outputStream.write(buffer.array());
-
+                // Send fixed-length header for file size
+                String sizeHeader = String.format("%10d", fileData.length);
+                outputStream.write(sizeHeader.getBytes());
                 // Send file data
                 outputStream.write(fileData, 0, fileData.length);
                 outputStream.flush();
@@ -61,11 +51,14 @@ public class Client {
                 socketOutput.println(command);
             }
             
-            // Read the response from the server
-            String fromServer;
-            if ((fromServer = socketInput.readLine()) != null) {
-                System.out.println("Server: " + fromServer);
-            }
+            // // Read the response from the server
+            // String fromServer;
+            // if ((fromServer = socketInput.readLine()) != null) {
+            //     System.out.println("Server: " + fromServer);
+            // }
+
+            String fromServer = socketInput.readLine();
+            System.out.println("Server: " + fromServer);
     
             // Now close all streams and the socket
             if (command.startsWith("put") && filePath != null) {
@@ -92,6 +85,10 @@ public class Client {
 
         public static void main(String[] args) {
             if (args.length < 1) {
+                System.err.println("Usage: java Client <command> [file path]");
+                System.exit(1);
+            }
+            if (args.length > 1 && !args[0].equals("put")){
                 System.err.println("Usage: java Client <command> [file path]");
                 System.exit(1);
             }

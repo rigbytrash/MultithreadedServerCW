@@ -1,6 +1,5 @@
 import java.io.*;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 
 public class ServerProtocol {
     private static final String SERVER_FILES_DIRECTORY = "serverFiles";
@@ -64,38 +63,39 @@ public class ServerProtocol {
     }
 
     public void handleFileTransfer(Socket clientSocket, String filename) throws IOException {
-    InputStream inputStream = clientSocket.getInputStream();
+        InputStream inputStream;
+        inputStream = clientSocket.getInputStream();
+        // Read the fixed-length header for file size
+        byte[] headerBytes = new byte[10];
+        readFully(inputStream, headerBytes);
+        long fileSize = Long.parseLong(new String(headerBytes).trim());
+        System.out.println("File size: " + fileSize);
 
-    // Read the size of the file first
-    byte[] sizeBytes = new byte[Long.BYTES];
-    readFully(inputStream, sizeBytes);
-    ByteBuffer sizeBuffer = ByteBuffer.wrap(sizeBytes);
-    long fileSize = sizeBuffer.getLong();
+        // Read the file data
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        byte[] data = new byte[1024];
+        int length;
+        long totalRead = 0;
 
-    // Read the file data
-    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-    byte[] data = new byte[1024];
-    int length;
-    long totalRead = 0;
+        while (totalRead < fileSize && (length = inputStream.read(data)) != -1) {
+            buffer.write(data, 0, length);
+            totalRead += length;
+        }
 
-    while (totalRead < fileSize && (length = inputStream.read(data)) != -1) {
-        buffer.write(data, 0, length);
-        totalRead += length;
-    }
-
-    writeFile(filename, buffer.toByteArray());
+        writeFile(filename, buffer.toByteArray());
 }
 
-private void readFully(InputStream input, byte[] buffer) throws IOException {
-    int offset = 0;
-    int bytesRead;
-    while (offset < buffer.length && (bytesRead = input.read(buffer, offset, buffer.length - offset)) != -1) {
-        offset += bytesRead;
+    private void readFully(InputStream input, byte[] buffer) throws IOException {
+        int offset = 0;
+        int bytesRead = 0;
+        while (offset < buffer.length && (bytesRead = input.read(buffer, offset, buffer.length - offset)) != -1) {
+            offset += bytesRead;
+        }
+        if (offset < buffer.length) {
+            throw new EOFException("File transmission was interrupted");
+        }
+        System.out.println(Integer.toString(bytesRead));
     }
-    if (offset < buffer.length) {
-        throw new EOFException("File transmission was interrupted");
-    }
-}
     
 }
 
