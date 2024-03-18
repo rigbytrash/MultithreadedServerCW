@@ -8,70 +8,69 @@ public class Client {
 
     public void playClient(String command, String filePath) {
         try {
-            int port = 9500;
-            try {
-                clientSocket = new Socket("localhost", port);
-            } catch (IOException e) {
-                System.err.println("Couldn't connect to port " + port);
-                System.exit(1);
-            }
+            clientSocket = new Socket("localhost", 9500);
             socketOutput = new PrintWriter(clientSocket.getOutputStream(), true);
             socketInput = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        } catch (UnknownHostException e) {
-            System.err.println("Don't know about host.");
-            System.exit(1);
-        } catch (IOException e) {
-            System.err.println("Couldn't get I/O for the connection to host.");
-            System.exit(1);
-        }
     
-        try {
             if (command.startsWith("put") && filePath != null) {
-                if (new File(filePath).exists()) {
-                    // File exists, proceed with sending the file
+                File file = new File(filePath);
+                if (file.exists()) {
+                    String fileName = file.getName();
+                    socketOutput.println("put " + fileName);
+    
+                    String serverResponse = socketInput.readLine();
+                    if ("Filename already in use".equals(serverResponse)) {
+                        System.out.println("Server: " + serverResponse);
+                        return; // Exit the method
+                    } else if (!"Ready for file transfer".equals(serverResponse)) {
+                        throw new IOException("Unexpected server response: " + serverResponse);
+                    }
+    
+                    sendFile(file, clientSocket.getOutputStream());
                 } else {
                     System.err.println("Local file does not exist");
                     System.exit(1);
                 }
-                String fileName = new File(filePath).getName(); // Extract the filename from the file path
-                socketOutput.println("put " + fileName); // Update the command with the filename
-                byte[] fileData = readFile(filePath);
-                OutputStream outputStream = clientSocket.getOutputStream();
-
-                // Send file size first
-                // Send fixed-length header for file size
-                String sizeHeader = String.format("%10d", fileData.length);
-                outputStream.write(sizeHeader.getBytes());
-                // Send file data
-                outputStream.write(fileData, 0, fileData.length);
-                outputStream.flush();
-                // Do not close the outputStream here
-            }
-            else {
+            } else {
                 socketOutput.println(command);
             }
-            
-            // // Read the response from the server
-            // String fromServer;
-            // if ((fromServer = socketInput.readLine()) != null) {
-            //     System.out.println("Server: " + fromServer);
-            // }
-
-            String fromServer = socketInput.readLine();
-            System.out.println("Server: " + fromServer);
     
-            // Now close all streams and the socket
-            if (command.startsWith("put") && filePath != null) {
-                clientSocket.getOutputStream().close();
+            String fromServer;
+            while ((fromServer = socketInput.readLine()) != null) {
+                System.out.println("Server: " + fromServer);
             }
-            socketOutput.close();
-            socketInput.close();
-            clientSocket.close();
         } catch (IOException e) {
             System.err.println("I/O exception during execution: " + e.getMessage());
-            System.exit(1);
+        } finally {
+            closeResources();
         }
     }
+    
+    private void sendFile(File file, OutputStream outputStream) throws IOException {
+        String sizeHeader = String.format("%10d", file.length());
+        outputStream.write(sizeHeader.getBytes());
+    
+        try (FileInputStream fis = new FileInputStream(file)) {
+            byte[] buffer = new byte[1024];
+            int count;
+            while ((count = fis.read(buffer)) > 0) {
+                outputStream.write(buffer, 0, count);
+            }
+            outputStream.flush();
+        }
+    }
+    
+    
+    private void closeResources() {
+        try {
+            if (socketOutput != null) socketOutput.close();
+            if (socketInput != null) socketInput.close();
+            if (clientSocket != null) clientSocket.close();
+        } catch (IOException e) {
+            System.err.println("Error closing resources: " + e.getMessage());
+        }
+    }
+    
     
 
     private byte[] readFile(String filePath) throws IOException {

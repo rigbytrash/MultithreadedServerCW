@@ -15,19 +15,19 @@ public class ServerProtocol {
                 String filename = inputArray[1];
                 System.out.println("Filename: " + filename);
                 File directory = new File(SERVER_FILES_DIRECTORY);
-                File[] files = directory.listFiles();
-                if (files != null) {
-                    for (File file : files) {
-                        if (file.isFile() && file.getName().equals(filename)) {
-                            return "Filename already in use";
-                        }
-                    }
+                if (!directory.exists()) {
+                    directory.mkdirs(); // Create directory if it doesn't exist
+                }
+                File file = new File(directory, filename);
+                if (file.exists()) {
+                    return "Filename already in use";
                 }
                 return "Ready for file transfer";
             default:
                 return "Invalid command";
         }
     }
+    
 
     public static String getListOfFiles() {
         File directory = new File(SERVER_FILES_DIRECTORY);
@@ -63,28 +63,35 @@ public class ServerProtocol {
     }
 
     public void handleFileTransfer(Socket clientSocket, String filename) throws IOException {
-        InputStream inputStream;
-        inputStream = clientSocket.getInputStream();
-        // Read the fixed-length header for file size
-        byte[] headerBytes = new byte[10];
-        readFully(inputStream, headerBytes);
-        long fileSize = Long.parseLong(new String(headerBytes).trim());
-        System.out.println("File size: " + fileSize);
-
-        // Read the file data
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        byte[] data = new byte[1024];
-        int length;
-        long totalRead = 0;
-
-        while (totalRead < fileSize && (length = inputStream.read(data)) != -1) {
-            buffer.write(data, 0, length);
-            totalRead += length;
+        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+        InputStream inputStream = clientSocket.getInputStream();
+        try {
+            out.println("Ready for file transfer");
+    
+            byte[] headerBytes = new byte[10];
+            readFully(inputStream, headerBytes);
+            long fileSize = Long.parseLong(new String(headerBytes).trim());
+            System.out.println("File size: " + fileSize);
+    
+            File file = new File(SERVER_FILES_DIRECTORY, filename);
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                byte[] buffer = new byte[1024];
+                int length;
+                long totalRead = 0;
+    
+                while (totalRead < fileSize && (length = inputStream.read(buffer)) != -1) {
+                    fos.write(buffer, 0, length);
+                    totalRead += length;
+                }
+            }
+            out.println("File transfer complete for " + filename);
+        } catch (EOFException e) {
+            System.err.println("File transfer was interrupted: " + e.getMessage());
+        } finally {
+            inputStream.close(); // Close the input stream
         }
-
-        writeFile(filename, buffer.toByteArray());
-}
-
+    }
+    
     private void readFully(InputStream input, byte[] buffer) throws IOException {
         int offset = 0;
         int bytesRead = 0;
