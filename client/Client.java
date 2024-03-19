@@ -91,6 +91,10 @@ public class Client {
                 System.err.println("Usage: java Client <command> [file path]");
                 System.exit(1);
             }
+            if (args.length > 2){
+                System.err.println("Usage: java Client <command> [file path]");
+                System.exit(1);
+            }
 
             Client client = new Client();
             if (args[0].equals("put") && args.length >= 2) {
