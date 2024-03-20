@@ -23,9 +23,11 @@ public class Client {
           socketOutput.println("put " + fileName);
 
           String serverResponse = socketInput.readLine();
-          if ("Filename already in use".equals(serverResponse)) {
-            System.out.println(serverResponse);
-            return; // Exit the method
+          if (
+            "Error: Filename already in use on server".equals(serverResponse)
+          ) {
+            System.err.println(serverResponse);
+            System.exit(1);
           } else if (!"Ready for file transfer".equals(serverResponse)) {
             throw new IOException(
               "Unexpected server response: " + serverResponse
@@ -34,7 +36,7 @@ public class Client {
 
           sendFile(file, clientSocket.getOutputStream());
         } else {
-          System.err.println("Local file does not exist");
+          System.err.println("Error: Local file does not exist");
           System.exit(1);
         }
       } else {
@@ -46,7 +48,9 @@ public class Client {
         System.out.println(fromServer);
       }
     } catch (IOException e) {
-      System.err.println("I/O exception during execution: " + e.getMessage());
+      System.err.println(
+        "Error: I/O exception during execution: " + e.getMessage()
+      );
     } finally {
       closeResources();
     }

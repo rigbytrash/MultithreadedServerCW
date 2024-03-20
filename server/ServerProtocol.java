@@ -21,11 +21,11 @@ public class ServerProtocol {
         }
         File file = new File(directory, filename);
         if (file.exists()) {
-          return "Filename already in use";
+          return "Error: Filename already in use on server";
         }
         return "Ready for file transfer";
       default:
-        return "Invalid command";
+        return "Error: Invalid command";
     }
   }
 
