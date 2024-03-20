@@ -17,7 +17,7 @@ public class ServerProtocol {
         System.out.println("Filename: " + filename);
         File directory = new File(SERVER_FILES_DIRECTORY);
         if (!directory.exists()) {
-          directory.mkdirs(); // Create directory if it doesn't exist
+          directory.mkdirs(); // create directory if it doesn't exist
         }
         File file = new File(directory, filename);
         if (file.exists()) {
@@ -33,15 +33,15 @@ public class ServerProtocol {
     File directory = new File(SERVER_FILES_DIRECTORY);
     StringBuilder fileList = new StringBuilder();
     if (directory.exists() && directory.isDirectory()) {
-      File[] files = directory.listFiles();
+      File[] files = directory.listFiles(); // list files in directory if it exists
       if (files != null) {
-        fileList.append("Listing ").append(files.length).append(" file(s):\n");
+        fileList.append("Listing ").append(files.length).append(" file(s):\n"); // append number of files
         for (int i = 0; i < files.length; i++) {
           File file = files[i];
           if (file.isFile()) {
-            fileList.append(file.getName());
+            fileList.append(file.getName()); // append file name
             if (i < files.length - 1) {
-              fileList.append("\n");
+              fileList.append("\n"); // append newline if not last file
             }
           }
         }
@@ -55,39 +55,38 @@ public class ServerProtocol {
     File[] files = directory.listFiles();
     if (files != null) {
       for (File file : files) {
-        if (file.isFile() && file.getName().equals(filename)) {
-          throw new IOException("Filename already in use");
+        if (file.isFile() && file.getName().equals(filename)) { // check if filename already in use
+          throw new IOException("Filename already in use"); // throw exception if filename already in use
         }
       }
     }
     File file = new File(SERVER_FILES_DIRECTORY, filename);
-    FileOutputStream fos = new FileOutputStream(file);
+    FileOutputStream fos = new FileOutputStream(file); // write file to server files directory using file output stream
     fos.write(data);
-    fos.close();
+    fos.close(); // close file output stream after writing file
   }
 
   public void handleFileTransfer(Socket clientSocket, String filename)
     throws IOException {
-    PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-    InputStream inputStream = clientSocket.getInputStream();
+    PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true); // output stream to client for sending data
+    InputStream inputStream = clientSocket.getInputStream(); // input stream from client for reading data
     try {
       out.println("Ready for file transfer");
 
-      byte[] headerBytes = new byte[10];
+      byte[] headerBytes = new byte[10]; // read file size from input stream
       readFully(inputStream, headerBytes);
-      long fileSize = Long.parseLong(new String(headerBytes).trim());
-      System.out.println("File size: " + fileSize);
+      long fileSize = Long.parseLong(new String(headerBytes).trim()); // parse file size from header bytes
 
       File file = new File(SERVER_FILES_DIRECTORY, filename);
-      try (FileOutputStream fos = new FileOutputStream(file)) {
+      try (FileOutputStream fos = new FileOutputStream(file)) { // create file output stream for writing file
         byte[] buffer = new byte[1024];
         int length;
         long totalRead = 0;
 
         while (
-          totalRead < fileSize && (length = inputStream.read(buffer)) != -1
+          totalRead < fileSize && (length = inputStream.read(buffer)) != -1 // read file from input stream
         ) {
-          fos.write(buffer, 0, length);
+          fos.write(buffer, 0, length); // write file to server files directory using file output stream
           totalRead += length;
         }
       }
@@ -95,7 +94,7 @@ public class ServerProtocol {
     } catch (EOFException e) {
       System.err.println("File transfer was interrupted: " + e.getMessage());
     } finally {
-      inputStream.close(); // Close the input stream
+      inputStream.close(); // close the input stream
     }
   }
 
@@ -104,14 +103,12 @@ public class ServerProtocol {
     int bytesRead = 0;
     while (
       offset < buffer.length &&
-      (bytesRead = input.read(buffer, offset, buffer.length - offset)) != -1
+      (bytesRead = input.read(buffer, offset, buffer.length - offset)) != -1 // read file from input stream
     ) {
-      offset += bytesRead;
+      offset += bytesRead; // increment offset by number of bytes read
     }
     if (offset < buffer.length) {
       throw new EOFException("File transmission was interrupted");
     }
-
-    System.out.println(Integer.toString(bytesRead));
   }
 }

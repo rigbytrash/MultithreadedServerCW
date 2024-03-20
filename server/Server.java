@@ -11,31 +11,29 @@ public class Server {
   private ServerProtocol server;
 
   public Server() {
-    executorService = Executors.newFixedThreadPool(20);
+    executorService = Executors.newFixedThreadPool(20); // 20 threads for handling clients concurrently
     server = new ServerProtocol();
   }
 
   private void handleClient(Socket clientSocket) throws IOException {
     try (
-      PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+      PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true); // output stream to client for sending data
       BufferedReader in = new BufferedReader(
-        new InputStreamReader(clientSocket.getInputStream())
+        new InputStreamReader(clientSocket.getInputStream()) // input stream from client for reading data
       )
     ) {
       String inputLine;
       if ((inputLine = in.readLine()) != null) {
         String[] inputArray = inputLine.split(" ");
-        String outputLine = server.processInput(inputArray);
+        String outputLine = server.processInput(inputArray); // process input from client
 
         if (outputLine.equals("Ready for file transfer")) {
           server.handleFileTransfer(clientSocket, inputArray[1]);
-          System.out.println("File transfer complete: " + inputArray[1]);
           out.println("File transfer complete for " + inputArray[1]);
-        } else {
-          System.out.println(outputLine);
+        } else { // send server response to client using output stream if not ready for file transfer (e.g. "put")
           out.println(outputLine);
         }
-        if (
+        if ( // log successful requests to log file
           !outputLine.equals("Invalid command") ||
           !outputLine.equals("No Filename Provided")
         ) {
@@ -65,7 +63,7 @@ public class Server {
       "|" +
       request;
 
-    try (PrintWriter out = new PrintWriter(new FileWriter("log.txt", true))) {
+    try (PrintWriter out = new PrintWriter(new FileWriter("log.txt", true))) { // append to log file if it exists or create new file
       out.println(logEntry);
     } catch (IOException e) {
       System.err.println("Error writing to log file: " + e.getMessage());
@@ -74,15 +72,9 @@ public class Server {
 
   private void startServerOnPort(int port) {
     try {
-      ServerSocket serverSocket = new ServerSocket(port);
+      ServerSocket serverSocket = new ServerSocket(port); // create server socket on port requested
       while (true) {
         Socket clientSocket = serverSocket.accept();
-        System.out.println(
-          "Client connected on port " +
-          port +
-          ": " +
-          clientSocket.getRemoteSocketAddress()
-        );
 
         executorService.submit(() -> {
           try {

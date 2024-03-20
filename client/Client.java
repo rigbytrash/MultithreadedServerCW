@@ -9,11 +9,11 @@ public class Client {
 
   public void playClient(String command, String filePath) {
     try {
-      clientSocket = new Socket("localhost", 9500);
+      clientSocket = new Socket("localhost", 9500); // fixd port number within range 9100 and 9999
       socketOutput = new PrintWriter(clientSocket.getOutputStream(), true);
       socketInput =
         new BufferedReader(
-          new InputStreamReader(clientSocket.getInputStream())
+          new InputStreamReader(clientSocket.getInputStream()) // input stream from server
         );
 
       if (command.startsWith("put") && filePath != null) {
@@ -22,7 +22,7 @@ public class Client {
           String fileName = file.getName();
           socketOutput.println("put " + fileName);
 
-          String serverResponse = socketInput.readLine();
+          String serverResponse = socketInput.readLine(); // read server response from input stream
           if (
             "Error: Filename already in use on server".equals(serverResponse)
           ) {
@@ -34,7 +34,7 @@ public class Client {
             );
           }
 
-          sendFile(file, clientSocket.getOutputStream());
+          sendFile(file, clientSocket.getOutputStream()); // send file to server using output stream
         } else {
           System.err.println("Error: Local file does not exist");
           System.exit(1);
@@ -44,7 +44,7 @@ public class Client {
       }
 
       String fromServer;
-      while ((fromServer = socketInput.readLine()) != null) {
+      while ((fromServer = socketInput.readLine()) != null) { // read server response from input stream until no more data
         System.out.println(fromServer);
       }
     } catch (IOException e) {
@@ -58,16 +58,16 @@ public class Client {
 
   private void sendFile(File file, OutputStream outputStream)
     throws IOException {
-    String sizeHeader = String.format("%10d", file.length());
-    outputStream.write(sizeHeader.getBytes());
+    String sizeHeader = String.format("%10d", file.length()); // format file size to 10 bytes string
+    outputStream.write(sizeHeader.getBytes()); // write file size to output stream
 
-    try (FileInputStream fis = new FileInputStream(file)) {
+    try (FileInputStream fis = new FileInputStream(file)) { // read file from file input stream
       byte[] buffer = new byte[1024];
       int count;
       while ((count = fis.read(buffer)) > 0) {
-        outputStream.write(buffer, 0, count);
+        outputStream.write(buffer, 0, count); // write file to output stream in chunks of 1024 bytes
       }
-      outputStream.flush();
+      outputStream.flush(); // flush output stream to ensure all data is sent to server
     }
   }
 
