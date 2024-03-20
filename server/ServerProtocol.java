@@ -35,10 +35,14 @@ public class ServerProtocol {
     if (directory.exists() && directory.isDirectory()) {
       File[] files = directory.listFiles();
       if (files != null) {
-        fileList.append("There are ").append(files.length).append(" file(s):");
-        for (File file : files) {
+        fileList.append("Listing ").append(files.length).append(" file(s):\n");
+        for (int i = 0; i < files.length; i++) {
+          File file = files[i];
           if (file.isFile()) {
-            fileList.append(", ").append(file.getName());
+            fileList.append(file.getName());
+            if (i < files.length - 1) {
+              fileList.append("\n");
+            }
           }
         }
       }

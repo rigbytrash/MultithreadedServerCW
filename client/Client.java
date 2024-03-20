@@ -24,7 +24,7 @@ public class Client {
 
           String serverResponse = socketInput.readLine();
           if ("Filename already in use".equals(serverResponse)) {
-            System.out.println("Server: " + serverResponse);
+            System.out.println(serverResponse);
             return; // Exit the method
           } else if (!"Ready for file transfer".equals(serverResponse)) {
             throw new IOException(
@@ -43,7 +43,7 @@ public class Client {
 
       String fromServer;
       while ((fromServer = socketInput.readLine()) != null) {
-        System.out.println("Server: " + fromServer);
+        System.out.println(fromServer);
       }
     } catch (IOException e) {
       System.err.println("I/O exception during execution: " + e.getMessage());
